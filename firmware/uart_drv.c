@@ -133,7 +133,14 @@ char uart_read(void){
 	} else {
 		return 0;
 	}
+}
 
+//Will this prevent read from occuring?
+char uart_get_next(void) {
+	while (state.state != DATA_PENDING) {
+
+	}
+	return uart_read();
 }
 
 void uart_ioctl(void){}
