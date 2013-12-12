@@ -6,13 +6,10 @@
 #define UART_PIN_IN PB2
 #define UART_PIN_OUT PB1
 
-#define TEST_PIN PB0
-
-#define uart_set_up() {DDRB |= 1 << UART_PIN_OUT; TCCR1 |= ((1 << CTC1) | (1 << CS10)); PCMSK |= (1 << UART_PIN_IN);} //Clear on overflow, external interupt on falling edge
-
+#define uart_set_up() {DDRB |= 1 << UART_PIN_OUT; TCCR1 |= ((1 << CTC1) | (1 << CS10)); PCMSK |= (1 << UART_PIN_IN);}
 #define uart_tear_down() (TCCR1 &= ~(1 << CTC1))
 #define uart_set_baud(bd) {OCR1C = bd; OCR1A = bd;}
-#define uart_reset_baud() (OCR1C = 0)
+#define uart_reset_baud() {OCR1C = 0; OCR1A = 0;}
 
 #define uart_start_timing() (TIMSK |= (1 << OCIE1A)) //Enable TImer 1 Interrupt
 #define uart_stop_timing() (TIMSK &= ~(1 << OCIE1A))

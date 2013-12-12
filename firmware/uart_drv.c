@@ -26,34 +26,21 @@ typedef struct State {
 	char *buffer;
 	uint16_t read;
 	uint16_t write;
+	uint16_t bufferLength;
 } State;
 
 volatile State state;
 
-ISR(TIM1_COMPA_vect) {
-	// switch (state.state) {
-	// 	case IDLE:
-	// 		break;
-	// 	case TRANSMIT:
-	// 		if (state.count == 9) {
-	// 			uart_set_low();
-	// 		}
-	// 		else if (state.count > 0) {
-	// 			if (*state.data & 1) {
-	// 				uart_set_low();
-	// 			} else {
-	// 				uart_set_high();
-	// 			}
-	// 			*state.data = *state.data >> 1;
-	// 		} else if ( state.count == 0) {
-	// 			uart_set_high();
-	// 			state.state = TRANSMIT_STOP_BIT;
-	// 		}
-	// 		state.count--;
-	// 		break;
-	// 	
-	// }
+//perhaps use pointers
+uint8_t incrementIndex(uint16_t index, uint16_t len) {
+	if (index + 1 == len) {
+		return 0;
+	} else {
+		return index + 1;
+	}
+}
 
+ISR(TIM1_COMPA_vect) {
 	switch (state.state) {
 		case IDLE:
 			break;
@@ -89,11 +76,19 @@ ISR(TIM1_COMPA_vect) {
 				}
 			} else {
 				state.state = DATA_PENDING;
-				uart_enable_read();
 			}
 			state.count++;
 			break;
 		case DATA_PENDING:
+			state.state = IDLE;
+			uart_stop_timing();
+
+			//Optimize this shitty process
+			state.write = incrementIndex(state.write, state.bufferLength);
+			if (state.read == state.write) {
+				state.write = incrementIndex(state.read, state.bufferLength);
+			}
+			uart_enable_read();
 			break;
 	}
 }
@@ -117,7 +112,6 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 
 	//Clear timer on compare match with OCR1C
 	uart_set_up();
-	DDRB |= 1 << TEST_PIN;
 
 	uart_enable_read();
 	//When to "overflow"
@@ -128,6 +122,7 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 	state.buffer = readBuffer;
 	state.read = 0;
 	state.write = 0;
+	state.bufferLength = bufferLength;
 
 	state.state = IDLE;
 	uart_set_high();
@@ -162,8 +157,16 @@ uint8_t uart_write(char *array, uint8_t len){
 	return 1;
 }
 
+//THIS IS SHIT, FIX THIS
 char uart_read(void){
-	return state.buffer[state.read];
+	char c;
+	if (state.read != state.write) {
+		c = state.buffer[state.read];
+		state.read = incrementIndex(state.read, state.bufferLength);
+	} else {
+		c = 0;
+	}
+	return c;
 }
 
 void uart_ioctl(void){}
