@@ -86,11 +86,10 @@ ISR(TIM1_COMPA_vect) {
 				state.buffer[state.write] = state.buffer[state.write] << 1;
 				if (uart_get()) {
 					state.buffer[state.write] |= 1;
-				} else {
-					state.buffer[state.write] &= ~1;
 				}
 			} else {
 				state.state = DATA_PENDING;
+				uart_enable_read();
 			}
 			state.count++;
 			break;
@@ -99,10 +98,11 @@ ISR(TIM1_COMPA_vect) {
 	}
 }
 
-ISR(INT0_vect) {
+ISR(PCINT0_vect) {
+	uart_disable_read();
 	state.state = RECEIVE;
 	state.count = 0;
-	uart_set_baud(state.baud * 3 / 2);
+	uart_set_baud( 156);
 	uart_reset_timing();
 	uart_start_timing();
 }
@@ -117,6 +117,8 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 
 	//Clear timer on compare match with OCR1C
 	uart_set_up();
+	DDRB |= 1 << TEST_PIN;
+
 	uart_enable_read();
 	//When to "overflow"
 	if (b_rate == 9600){
