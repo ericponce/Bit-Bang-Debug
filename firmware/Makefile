@@ -36,6 +36,7 @@
 ##### make hex
 ##### make writeflash
 ##### make gdbinit
+##### make writeflashard
 ##### or make clean
 #####
 ##### See the http://electrons.psychogenic.com/ 
@@ -74,7 +75,7 @@ MCU=attiny85
 # accept the same MCU name as avr-gcc (for example
 # for ATmega8s, avr-gcc expects 'atmega8' and 
 # avrdude requires 'm8')
-PROGRAMMER_MCU=attiny85
+PROGRAMMER_MCU=t85
 
 # Name of our project
 # (use a single word, e.g. 'myproject')
@@ -115,12 +116,16 @@ F_CPU=1000000UL
 # one of the valid "-c PROGRAMMER-ID" values 
 # described in the avrdude info page.
 # 
-AVRDUDE_PROGRAMMERID=usbtiny
+AVRDUDE_PROGRAMMERID=avrisp
 
 # port--serial or parallel port to which your 
 # hardware programmer is attached
 #
-#AVRDUDE_PORT=/dev/tty.usbserial-A800f8YO
+AVRDUDE_PORT=/dev/tty.usbmodem1421
+
+# baud rate
+#
+BAUD_RATE=19200
 
 
 ####################################################
@@ -214,7 +219,7 @@ GENASMFILES=$(filter %.s, $(OBJDEPS:.o=.s))
 	.hex .ee.hex .h .hh .hpp
 
 
-.PHONY: writeflash clean stats gdbinit stats
+.PHONY: writeflash clean stats gdbinit stats writeflashard
 
 # Make targets:
 # all, disasm, stats, hex, writeflash/install, clean
@@ -228,6 +233,12 @@ stats: $(TRG)
 
 hex: $(HEXTRG)
 
+writeflashard: hex
+	$(AVRDUDE) -c avrisp   \
+	 -p $(PROGRAMMER_MCU) -e        \
+	 -U flash:w:$(HEXROMTRG)       \
+	 -P $(AVRDUDE_PORT)        \
+	 -b $(BAUD_RATE)
 
 writeflash: hex
 	$(AVRDUDE) -c $(AVRDUDE_PROGRAMMERID)   \

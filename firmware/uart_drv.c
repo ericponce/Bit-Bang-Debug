@@ -71,7 +71,7 @@ ISR(TIM1_COMPA_vect) {
 			}
 			if (state.count < 8) {
 				state.buffer[state.write] = state.buffer[state.write] << 1;
-				if (uart_get()) {
+				if (!uart_get()) {
 					state.buffer[state.write] |= 1;
 				}
 			} else {
@@ -112,7 +112,6 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 
 	//Clear timer on compare match with OCR1C
 	uart_set_up();
-
 	uart_enable_read();
 	//When to "overflow"
 	if (b_rate == 9600){

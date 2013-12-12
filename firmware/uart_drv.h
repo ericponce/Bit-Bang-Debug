@@ -6,7 +6,12 @@
 #define UART_PIN_IN PB2
 #define UART_PIN_OUT PB1
 
-#define uart_set_up() {DDRB |= 1 << UART_PIN_OUT; TCCR1 |= ((1 << CTC1) | (1 << CS10)); PCMSK |= (1 << UART_PIN_IN);}
+#define TEST_PIN PB4
+#define uart_set_up_test() (DDRB |= 1 << TEST_PIN)
+#define uart_test_high() (PORTB |= (1 << TEST_PIN))
+#define uart_test_low() (PORTB &= ~(1 << TEST_PIN))
+
+#define uart_set_up() {DDRB |= (1 << UART_PIN_OUT); TCCR1 |= ((1 << CTC1) | (1 << CS10)); PCMSK |= (1 << UART_PIN_IN);}
 #define uart_tear_down() (TCCR1 &= ~(1 << CTC1))
 #define uart_set_baud(bd) {OCR1C = bd; OCR1A = bd;}
 #define uart_reset_baud() {OCR1C = 0; OCR1A = 0;}
