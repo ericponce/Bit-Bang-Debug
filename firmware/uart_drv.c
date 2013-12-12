@@ -21,62 +21,69 @@ typedef enum{
 typedef struct State {
 	UState state;
 	uint8_t baud;
-	char *data;
+	char data;
 	uint8_t count;
 } State;
 
-State state;
+volatile State state;
 
-ISR(TIM1_OVF_vect) {
-	switch (state.state) {
-		case IDLE:
-			break;
-		case TRANSMIT:
-			if (state.count > 0) {
-				if (*state.data & 1) {
-					uart_set_high();
-				} else {
-					uart_set_low();
-				}
-				*state.data = *state.data >> 1;
-			} else if (!state.count) {
-				uart_set_high();
-				state.state = TRANSMIT_STOP_BIT;
-			}
-			state.count--;
-			break;
-		case TRANSMIT_STOP_BIT:
-			uart_stop_timing();
-			uart_enable_read();
-			state.state = IDLE;
-			break;
-		case RECEIVE:
-			if (state.count == 0) {
-				uart_set_baud(state.baud);
-			} else if (state.count <= 8) {
-				if (uart_get()) {
-					*state.data |= 1;
-				} else {
-					*state.data &= ~1;
-				}
-				*state.data = *state.data << 1;
-			} else {
-				state.state = DATA_PENDING;
-			}
-			state.count++;
-			break;
-		case DATA_PENDING:
-			break;
+ISR(TIM1_COMPA_vect) {
+	// switch (state.state) {
+	// 	case IDLE:
+	// 		break;
+	// 	case TRANSMIT:
+	// 		if (state.count == 9) {
+	// 			uart_set_low();
+	// 		}
+	// 		else if (state.count > 0) {
+	// 			if (*state.data & 1) {
+	// 				uart_set_low();
+	// 			} else {
+	// 				uart_set_high();
+	// 			}
+	// 			*state.data = *state.data >> 1;
+	// 		} else if ( state.count == 0) {
+	// 			uart_set_high();
+	// 			state.state = TRANSMIT_STOP_BIT;
+	// 		}
+	// 		state.count--;
+	// 		break;
+	// 	case TRANSMIT_STOP_BIT:
+	// 		uart_stop_timing();
+	// 		uart_enable_read();
+	// 		state.state = IDLE;
+	// 		break;
+	// }
+
+	if (state.count == 9) {
+		uart_set_low();
 	}
+
+	else if (state.count > 0 ){
+		if (state.data & 1) {
+				uart_set_high();
+		} else {
+				uart_set_low();
+		}
+		state.data = state.data >> 1;
+	}
+
+	else {
+		uart_set_high();
+		state.state = IDLE;
+		uart_stop_timing();
+	}
+
+	state.count--;
 }
 
-ISR(INT0_vect) {
-	state.state = RECEIVE;
-	state.count = 0;
-	uart_set_baud(state.baud * 1.5);
-	uart_start_timing();
+// ISR(INT0_vect) {
+// 	state.state = RECEIVE;
+// 	state.count = 0;
+// 	uart_set_baud(state.baud * 1.5);
+// 	uart_start_timing();
 
-}
+// }
 
 /**
 * Sets up UART Com
@@ -88,12 +95,13 @@ uint8_t uart_open(unsigned long b_rate){
 
 	//Clear timer on compare match with OCR1C
 	uart_set_up();
-	uart_enable_read();
+	//uart_enable_read();
 	//When to "overflow"
 	if (b_rate == 9600){
 		state.baud = 104;
 	}
 	state.state = IDLE;
+	uart_set_high();
 	return 1;
 }
 
@@ -106,14 +114,14 @@ uint8_t _put_char(char *byte) {
 	while(state.state != IDLE) {
 
 	}
-	uart_disable_read();
+	//uart_disable_read();
 	state.state = TRANSMIT;
-	state.data = byte;
-	state.count = 8;
-	uart_reset_timing();
+	state.data = *byte;
+	state.count = 9;
 	uart_set_baud(state.baud); //Make more standard
-	uart_set_low();
+	uart_reset_timing();
 	uart_start_timing();
+
 	return 1;
 
 }
@@ -127,6 +135,7 @@ uint8_t uart_write(char *array, uint8_t len){
 }
 
 char uart_read(void){
+<<<<<<< HEAD
 	if (state.state == DATA_PENDING) {
 		state.state = IDLE;
 		return *state.data;
@@ -141,6 +150,15 @@ char uart_get_next(void) {
 
 	}
 	return uart_read();
+=======
+	// if (state.state == DATA_PENDING) {
+	// 	state.state = IDLE;
+	// 	return state.data;
+	// } else {
+	// 	return 0;
+	// }
+	return 1;
+>>>>>>> c9df23331aa4999459a017d6f55dae03114f8333
 }
 
 void uart_ioctl(void){}
