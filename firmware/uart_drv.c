@@ -26,19 +26,9 @@ typedef struct State {
 	char *buffer;
 	uint16_t read;
 	uint16_t write;
-	uint16_t bufferLength;
 } State;
 
 volatile State state;
-
-//perhaps use pointers
-uint8_t incrementIndex(uint16_t index, uint16_t len) {
-	if (index + 1 == len) {
-		return 0;
-	} else {
-		return index + 1;
-	}
-}
 
 ISR(TIM1_COMPA_vect) {
 	switch (state.state) {
@@ -49,59 +39,57 @@ ISR(TIM1_COMPA_vect) {
 				uart_set_low();
 			}else if (state.count > 0) {		
 				if (state.data & 1) {
-						uart_set_low();
-				} else {
 						uart_set_high();
+				} else {
+						uart_set_low();
 				}
 				state.data = state.data >> 1;
 			} else {
 				uart_set_high();
-				state.state = IDLE;
-				uart_stop_timing();
+				state.state = TRANSMIT_STOP_BIT;
 			}
 			state.count--;
 			break;
-		// case TRANSMIT_STOP_BIT:
-		// 	uart_stop_timing();
-		// 	uart_enable_read();
-		// 	state.state = IDLE;
-		// 	break;
-		// case RECEIVE:
-		// 	if (state.count == 0) {
-		// 		uart_set_baud(state.baud);
-		// 	}
-		// 	if (state.count < 8) {
-		// 		state.buffer[state.write] = state.buffer[state.write] >> 1;
-		// 		if (!uart_get()) {
-		// 			state.buffer[state.write] |= 0x80;
-		// 		}
-		// 	} else {
-		// 		state.state = DATA_PENDING;
-		// 	}
-		// 	state.count++;
-		// 	break;
-		// case DATA_PENDING:
-		// 	state.state = IDLE;
-		// 	uart_stop_timing();
+		case TRANSMIT_STOP_BIT:
+			uart_stop_timing();
+			uart_enable_read();
+			state.state = IDLE;
+			break;
+		case RECEIVE:
 
-		// 	//Optimize this shitty process
-		// 	state.write = incrementIndex(state.write, state.bufferLength);
-		// 	if (state.read == state.write) {
-		// 		state.write = incrementIndex(state.read, state.bufferLength);
-		// 	}
-		// 	uart_enable_read();
-		// 	break;
+			if (state.count == 0) {
+				uart_set_baud(state.baud);
+			}
+			if (state.count < 8) {
+				PORTB ^= 1 << TEST_PIN;
+				*state.buffer = *state.buffer >> 1;
+				if (uart_get()) {
+					*state.buffer |= 0x80;
+				}
+			} 
+			else if (state.count == 8) {
+
+			}
+
+			else {
+				state.state = IDLE;
+				uart_read_interrupt_reset();
+				uart_enable_read();
+			}
+			state.count++;
+
+			break;
 	}
 }
 
-// ISR(PCINT0_vect) {
-// 	uart_disable_read();
-// 	state.state = RECEIVE;
-// 	state.count = 0;
-// 	uart_set_baud(156);
-// 	uart_set_timing(26);
-// 	uart_start_timing();
-// }
+ISR(PCINT0_vect) {
+	uart_disable_read();
+	state.state = RECEIVE;
+	state.count = 0;
+	uart_set_baud(156-50);
+	uart_reset_timing();
+	uart_start_timing();
+}
 
 /**
 * Sets up UART Com
@@ -110,9 +98,10 @@ ISR(TIM1_COMPA_vect) {
 *
 */
 uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength){
-
 	//Clear timer on compare match with OCR1C
 	uart_set_up();
+	DDRB |= 1 << TEST_PIN;
+
 	uart_enable_read();
 	//When to "overflow"
 	if (b_rate == 9600){
@@ -122,7 +111,6 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 	state.buffer = readBuffer;
 	state.read = 0;
 	state.write = 0;
-	state.bufferLength = bufferLength;
 
 	state.state = IDLE;
 	uart_set_high();
@@ -157,17 +145,8 @@ uint8_t uart_write(char *array, uint8_t len){
 	return 1;
 }
 
-//THIS IS SHIT, FIX THIS
 char uart_read(void){
-	// char c;
-	// if (state.read != state.write) {
-	// 	c = state.buffer[state.read];
-	// 	state.read = incrementIndex(state.read, state.bufferLength);
-	// } else {
-	// 	c = 0;
-	// }
-	// return c;
-	return 0;
+	return state.buffer[0];
 }
 
 void uart_ioctl(void){}
