@@ -2,13 +2,12 @@
 #include <util/delay.h>
 #include "uart_drv.h"
 
-char inputBuffer[8];
 
 
 int main(void) {
-	DDRB |= 1 << PB1;
-	char foo;
+	volatile char inputBuffer[8];
 
+	char foo = 'a';
 	uart_open(9600, inputBuffer, 8);
 	sei();
 
@@ -17,6 +16,7 @@ int main(void) {
 		if (foo != 0x00){
 			uart_write(&foo, 1);
 		}
+		_delay_ms(50);
 	}
 
 	uart_close();
