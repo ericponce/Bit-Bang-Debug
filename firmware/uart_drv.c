@@ -15,7 +15,6 @@ typedef enum{
     TRANSMIT,
     TRANSMIT_STOP_BIT,
     RECEIVE,
-    DATA_PENDING
  } UState;
 
 typedef struct State {
@@ -24,14 +23,14 @@ typedef struct State {
 	char data;
 	uint8_t count;
 	char *buffer;
-	uint16_t read;
-	uint16_t write;
-	uint16_t len;
+	uint8_t read;
+	uint8_t write;
+	uint8_t len;
 } State;
 
 volatile State state;
 
-uint16_t getNextIndex(uint16_t i, uint16_t len) {
+uint16_t getNextIndex(uint8_t i, uint8_t len) {
 	if (i + 1 == len) {
 		return 0;
 	} else {
@@ -70,18 +69,17 @@ ISR(TIM1_COMPA_vect) {
 				uart_set_baud(state.baud);
 			}
 			if (state.count < 8) {
-				state.buffer[state.write] = state.buffer[state.write] >> 1;
-				if (uart_get()) {
-					state.buffer[state.write] |= 0x80;
-				}
+				state.data = state.data >> 1;
+				state.data |= uart_get();
 			} 
 			else if (state.count == 8) {
 
 			} else {
+				state.buffer[state.write] = state.data;
 				state.state = IDLE;
 				state.write = getNextIndex(state.write, state.len);
-				if (state.write = state.read) {
-					state.read = getnextIndex(state.read, state.len);
+				if (state.write == state.read) {
+					state.read = getNextIndex(state.read, state.len);
 				}
 				uart_read_interrupt_reset();
 				uart_enable_read();
@@ -96,7 +94,7 @@ ISR(PCINT0_vect) {
 	uart_disable_read();
 	state.state = RECEIVE;
 	state.count = 0;
-	uart_set_baud(156-50);
+	uart_set_baud(156-70);
 	uart_reset_timing();
 	uart_start_timing();
 }
@@ -107,7 +105,7 @@ ISR(PCINT0_vect) {
 * returns != 0 if good, 0 if bad
 *
 */
-uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength){
+uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint8_t bufferLength){
 	//Clear timer on compare match with OCR1C
 	uart_set_up();
 	DDRB |= 1 << TEST_PIN;
@@ -121,7 +119,7 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 	state.buffer = readBuffer;
 	state.read = 0;
 	state.write = 0;
-	state.len - bufferLength;
+	state.len = bufferLength;
 
 	state.state = IDLE;
 	uart_set_high();
@@ -156,15 +154,14 @@ uint8_t uart_write(char *array, uint8_t len){
 	return 1;
 }
 
-char uart_read(void){
-	char c;
+uint8_t uart_read(char * out){
 	if (state.read == state.write) {
-		c = 0;
+		return 0;
 	} else {
-		c = state.buffer[state.read];
+		*out = state.buffer[state.read];
 		state.read = getNextIndex(state.read, state.len);
 	}
-	return c;
+	return 1;
 }
 
 void uart_ioctl(void){}

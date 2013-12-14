@@ -20,14 +20,14 @@
 
 #define uart_set_high() (UART_PORT_OUT |= (1 << UART_PIN_OUT))
 #define uart_set_low() (UART_PORT_OUT &= ~(1 << UART_PIN_OUT))
-#define uart_get() ((UART_PORT_IN & (1 << UART_PIN_IN)) >> UART_PIN_IN)
+#define uart_get() ((UART_PORT_IN & (1 << UART_PIN_IN)) << (7-UART_PIN_IN))
 
 #define uart_enable_read() (GIMSK |= (1 << PCIE)) //Enable external interrupts
 #define uart_disable_read() (GIMSK &= ~(1 << PCIE))
 #define uart_read_interrupt_reset() (GIFR |= 1 << PCIF)
 
-extern uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength);
+extern uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint8_t bufferLength);
 extern void uart_close(void);
-extern char uart_read(void);
+extern uint8_t uart_read(char * out);
 extern uint8_t uart_write(char *array, uint8_t len);
 extern void uart_ioctl(void);
