@@ -24,19 +24,21 @@ uint8_t shift = 2;
 
 int main(void) {
 	uart_set_up_test();
-	char foo;
+	char foo = 'F';
 
 	uart_open(9600, inputBuffer, 8);
 	sei();
 
 	while(1) {
-		foo = uart_read();
 
-		if (foo == 0){
-			uart_test_low();
-		} else {
-			uart_test_high();
-		}
+		uart_write(&foo, 1);
+		// foo = uart_read();
+
+		// if (foo == 0){
+		// 	uart_test_low();
+		// } else {
+		// 	uart_test_high();
+		// }
 	}
 
 	uart_close();

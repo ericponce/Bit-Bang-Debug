@@ -56,51 +56,52 @@ ISR(TIM1_COMPA_vect) {
 				state.data = state.data >> 1;
 			} else {
 				uart_set_high();
-				state.state = TRANSMIT_STOP_BIT;
+				state.state = IDLE;
+				uart_stop_timing();
 			}
 			state.count--;
 			break;
-		case TRANSMIT_STOP_BIT:
-			uart_stop_timing();
-			uart_enable_read();
-			state.state = IDLE;
-			break;
-		case RECEIVE:
-			if (state.count == 0) {
-				uart_set_baud(state.baud);
-			}
-			if (state.count < 8) {
-				state.buffer[state.write] = state.buffer[state.write] >> 1;
-				if (!uart_get()) {
-					state.buffer[state.write] |= 0x80;
-				}
-			} else {
-				state.state = DATA_PENDING;
-			}
-			state.count++;
-			break;
-		case DATA_PENDING:
-			state.state = IDLE;
-			uart_stop_timing();
+		// case TRANSMIT_STOP_BIT:
+		// 	uart_stop_timing();
+		// 	uart_enable_read();
+		// 	state.state = IDLE;
+		// 	break;
+		// case RECEIVE:
+		// 	if (state.count == 0) {
+		// 		uart_set_baud(state.baud);
+		// 	}
+		// 	if (state.count < 8) {
+		// 		state.buffer[state.write] = state.buffer[state.write] >> 1;
+		// 		if (!uart_get()) {
+		// 			state.buffer[state.write] |= 0x80;
+		// 		}
+		// 	} else {
+		// 		state.state = DATA_PENDING;
+		// 	}
+		// 	state.count++;
+		// 	break;
+		// case DATA_PENDING:
+		// 	state.state = IDLE;
+		// 	uart_stop_timing();
 
-			//Optimize this shitty process
-			state.write = incrementIndex(state.write, state.bufferLength);
-			if (state.read == state.write) {
-				state.write = incrementIndex(state.read, state.bufferLength);
-			}
-			uart_enable_read();
-			break;
+		// 	//Optimize this shitty process
+		// 	state.write = incrementIndex(state.write, state.bufferLength);
+		// 	if (state.read == state.write) {
+		// 		state.write = incrementIndex(state.read, state.bufferLength);
+		// 	}
+		// 	uart_enable_read();
+		// 	break;
 	}
 }
 
-ISR(PCINT0_vect) {
-	uart_disable_read();
-	state.state = RECEIVE;
-	state.count = 0;
-	uart_set_baud(156);
-	uart_set_timing(26);
-	uart_start_timing();
-}
+// ISR(PCINT0_vect) {
+// 	uart_disable_read();
+// 	state.state = RECEIVE;
+// 	state.count = 0;
+// 	uart_set_baud(156);
+// 	uart_set_timing(26);
+// 	uart_start_timing();
+// }
 
 /**
 * Sets up UART Com
@@ -158,14 +159,15 @@ uint8_t uart_write(char *array, uint8_t len){
 
 //THIS IS SHIT, FIX THIS
 char uart_read(void){
-	char c;
-	if (state.read != state.write) {
-		c = state.buffer[state.read];
-		state.read = incrementIndex(state.read, state.bufferLength);
-	} else {
-		c = 0;
-	}
-	return c;
+	// char c;
+	// if (state.read != state.write) {
+	// 	c = state.buffer[state.read];
+	// 	state.read = incrementIndex(state.read, state.bufferLength);
+	// } else {
+	// 	c = 0;
+	// }
+	// return c;
+	return 0;
 }
 
 void uart_ioctl(void){}
