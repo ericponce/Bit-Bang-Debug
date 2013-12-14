@@ -49,9 +49,9 @@ ISR(TIM1_COMPA_vect) {
 				uart_set_low();
 			}else if (state.count > 0) {		
 				if (state.data & 1) {
-						uart_set_high();
-				} else {
 						uart_set_low();
+				} else {
+						uart_set_high();
 				}
 				state.data = state.data >> 1;
 			} else {
@@ -70,9 +70,9 @@ ISR(TIM1_COMPA_vect) {
 				uart_set_baud(state.baud);
 			}
 			if (state.count < 8) {
-				state.buffer[state.write] = state.buffer[state.write] << 1;
+				state.buffer[state.write] = state.buffer[state.write] >> 1;
 				if (!uart_get()) {
-					state.buffer[state.write] |= 1;
+					state.buffer[state.write] |= 0x80;
 				}
 			} else {
 				state.state = DATA_PENDING;
@@ -97,8 +97,8 @@ ISR(PCINT0_vect) {
 	uart_disable_read();
 	state.state = RECEIVE;
 	state.count = 0;
-	uart_set_baud( 156);
-	uart_reset_timing();
+	uart_set_baud(156);
+	uart_set_timing(26);
 	uart_start_timing();
 }
 

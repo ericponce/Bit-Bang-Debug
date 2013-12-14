@@ -19,6 +19,7 @@
 #define uart_start_timing() (TIMSK |= (1 << OCIE1A)) //Enable TImer 1 Interrupt
 #define uart_stop_timing() (TIMSK &= ~(1 << OCIE1A))
 #define uart_reset_timing() (TCNT1 = 0)
+#define uart_set_timing(i) (TCNT1 = i)
 
 #define uart_set_high() (UART_PORT_OUT |= (1 << UART_PIN_OUT))
 #define uart_set_low() (UART_PORT_OUT &= ~(1 << UART_PIN_OUT))
