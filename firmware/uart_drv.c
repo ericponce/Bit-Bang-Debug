@@ -26,9 +26,18 @@ typedef struct State {
 	char *buffer;
 	uint16_t read;
 	uint16_t write;
+	uint16_t len;
 } State;
 
 volatile State state;
+
+uint16_t getNextIndex(uint16_t i, uint16_t len) {
+	if (i + 1 == len) {
+		return 0;
+	} else {
+		return i + 1;
+	}
+}
 
 ISR(TIM1_COMPA_vect) {
 	switch (state.state) {
@@ -61,18 +70,19 @@ ISR(TIM1_COMPA_vect) {
 				uart_set_baud(state.baud);
 			}
 			if (state.count < 8) {
-				PORTB ^= 1 << TEST_PIN;
-				*state.buffer = *state.buffer >> 1;
+				state.buffer[state.write] = state.buffer[state.write] >> 1;
 				if (uart_get()) {
-					*state.buffer |= 0x80;
+					state.buffer[state.write] |= 0x80;
 				}
 			} 
 			else if (state.count == 8) {
 
-			}
-
-			else {
+			} else {
 				state.state = IDLE;
+				state.write = getNextIndex(state.write, state.len);
+				if (state.write = state.read) {
+					state.read = getnextIndex(state.read, state.len);
+				}
 				uart_read_interrupt_reset();
 				uart_enable_read();
 			}
@@ -111,6 +121,7 @@ uint8_t uart_open(unsigned long b_rate, char* readBuffer, uint16_t bufferLength)
 	state.buffer = readBuffer;
 	state.read = 0;
 	state.write = 0;
+	state.len - bufferLength;
 
 	state.state = IDLE;
 	uart_set_high();
@@ -146,7 +157,14 @@ uint8_t uart_write(char *array, uint8_t len){
 }
 
 char uart_read(void){
-	return state.buffer[0];
+	char c;
+	if (state.read == state.write) {
+		c = 0;
+	} else {
+		c = state.buffer[state.read];
+		state.read = getNextIndex(state.read, state.len);
+	}
+	return c;
 }
 
 void uart_ioctl(void){}
